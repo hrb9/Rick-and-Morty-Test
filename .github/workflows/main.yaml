@@ -30,17 +30,22 @@ jobs:
           kubectl apply -f yamls/Service.yaml
           kubectl apply -f yamls/Ingress.yaml
 
-      # 4) Wait for pods to be ready instead of using sleep
+      # 4) Wait for Deployment to be Ready
       - name: Wait for Deployment to be Ready
         run: |
           kubectl rollout status deployment/rick-and-morty-deployment --timeout=120s
           kubectl get pods
 
-      # 5) Run Tests
+      # 5) Expose Service Using Port Forwarding
+      - name: Start Port Forwarding
+        run: |
+          kubectl port-forward svc/rick-and-morty-service 5000:80 &
+          sleep 5
+
+      # 6) Run Tests
       - name: Test API Endpoints
         run: |
-          # Get the Minikube service URL
-          API_URL=$(minikube service rick-and-morty-service --url)
+          API_URL="http://localhost:5000"
           echo "Testing API at $API_URL"
 
           # Test healthcheck
@@ -49,7 +54,7 @@ jobs:
           # Test characters endpoint
           curl -f "$API_URL/characters"
 
-      # 6) Dump logs if deployment fails
+      # 7) Dump logs if deployment fails
       - name: Show Logs on Failure
         if: failure()
         run: |
