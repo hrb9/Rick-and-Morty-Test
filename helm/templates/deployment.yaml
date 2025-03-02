@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "rick-and-morty-chart.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "rick-and-morty-chart.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "rick-and-morty-chart.name" . }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "rick-and-morty-chart.name" . }}
+    spec:
+      containers:
+        - name: rick-and-morty-container
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.targetPort }}
