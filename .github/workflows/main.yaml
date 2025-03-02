@@ -13,31 +13,35 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v2
 
-      - name: Set up Kind cluster
-        uses: helm/kind-action@v1.2.0
-        with:
-          version: v0.17.0
+      # 1) Start Minikube on the GitHub Actions runner
+      - name: Start Minikube
+        uses: medyagh/setup-minikube@latest
+        # You can optionally set resources or driver:
+        # with:
+        #   driver: docker
+        #   cpus: 2
+        #   memory: 2048
 
+      # 2) Build the Docker image inside Minikube
+      # This makes the image available to the Minikube cluster
       - name: Build Docker image
         run: |
-          docker build -t rick-and-morty-app:latest .
+          minikube image build -t rick-and-morty-app:latest .
 
-      - name: Load Docker image into Kind
-        run: |
-          kind load docker-image rick-and-morty-app:latest
-
+      # 3) Deploy the application using kubectl
       - name: Deploy using kubectl
         run: |
           kubectl apply -f yamls/Deployment.yaml
           kubectl apply -f yamls/Service.yaml
           kubectl apply -f yamls/Ingress.yaml
 
+      # 4) Wait for pods, then test the endpoints
       - name: Test endpoints
         run: |
           # Wait a few seconds for the Pods to become ready
           sleep 10
 
-          # Check pods status
+          # Check pod status
           kubectl get pods
 
           # Port-forward to local port 5000
