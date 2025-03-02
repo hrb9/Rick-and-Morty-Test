@@ -16,16 +16,11 @@ jobs:
       # 1) Start Minikube on the GitHub Actions runner
       - name: Start Minikube
         uses: medyagh/setup-minikube@latest
-        # You can optionally set resources or driver:
-        # with:
-        #   driver: docker
-        #   cpus: 2
-        #   memory: 2048
 
       # 2) Build the Docker image inside Minikube
-      # This makes the image available to the Minikube cluster
-      - name: Build Docker image
+      - name: Build Docker image inside Minikube
         run: |
+          eval $(minikube docker-env)
           minikube image build -t rick-and-morty-app:latest .
 
       # 3) Deploy the application using kubectl
@@ -35,21 +30,32 @@ jobs:
           kubectl apply -f yamls/Service.yaml
           kubectl apply -f yamls/Ingress.yaml
 
-      # 4) Wait for pods, then test the endpoints
-      - name: Test endpoints
+      # 4) Wait for pods to be ready instead of using sleep
+      - name: Wait for Deployment to be Ready
         run: |
-          # Wait a few seconds for the Pods to become ready
-          sleep 10
-
-          # Check pod status
+          kubectl rollout status deployment/rick-and-morty-deployment --timeout=120s
           kubectl get pods
 
-          # Port-forward to local port 5000
-          kubectl port-forward svc/rick-and-morty-service 5000:80 &
-          sleep 5
+      # 5) Run Tests
+      - name: Test API Endpoints
+        run: |
+          # Get the Minikube service URL
+          API_URL=$(minikube service rick-and-morty-service --url)
+          echo "Testing API at $API_URL"
 
-          # Test the healthcheck endpoint
-          curl http://localhost:5000/healthcheck
+          # Test healthcheck
+          curl -f "$API_URL/healthcheck"
 
-          # Test the characters endpoint
-          curl http://localhost:5000/characters
+          # Test characters endpoint
+          curl -f "$API_URL/characters"
+
+      # 6) Dump logs if deployment fails
+      - name: Show Logs on Failure
+        if: failure()
+        run: |
+          echo "=== Kubernetes Resources ==="
+          kubectl get all -A
+          echo "=== Pod Descriptions ==="
+          kubectl describe pods
+          echo "=== Application Logs ==="
+          kubectl logs -l app=rickandmorty --all-containers --tail=100
