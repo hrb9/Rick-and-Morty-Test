@@ -86,4 +86,4 @@ This project fetches data from the Rick and Morty API and exposes a REST interfa
         kubectl get svc
         kubectl get ingress                                                                                      
     ```    
-3. **By default, you can configure the domain/host in helm/values.yaml**:
+3. **By default, you can configure the domain/host in helm/values.yaml**
