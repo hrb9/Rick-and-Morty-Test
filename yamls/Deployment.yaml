@@ -17,5 +17,6 @@ spec:
       containers:
         - name: rick-and-morty-container
           image: rick-and-morty-app:latest
+          imagePullPolicy: Never  
           ports:
             - containerPort: 5000
